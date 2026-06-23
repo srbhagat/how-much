@@ -161,7 +161,7 @@ def build_or_update_database(years_requested=2, force=False):
     except Exception as e:
         st.warning(f"Latest CoinDCX candle fetch failed: {e}")
 
-    window_ms = STEP_MS * 1000  # 1000 candles per request
+    window_ms = STEP_MS * 1000
     cursor = target_start_ms
     total_span = max(1, now_ms - target_start_ms)
     batch = 0
@@ -229,17 +229,17 @@ def build_or_update_database(years_requested=2, force=False):
     latest_dt = pd.to_datetime(df["datetime"].max())
     age_minutes = (pd.Timestamp.now(tz=latest_dt.tz) - latest_dt).total_seconds() / 60
 
-    expected = min(int(years_requested * 365 * 96), len(df)) if years_requested == 1 else int(years_requested * 365 * 96)
+    expected = int(years_requested * 365 * 96)
     coverage = len(df) / expected * 100 if expected else 0
 
     if age_minutes <= 120:
-        status.success(f"CoinDCX database ready with {len(df):,} candles | coverage {coverage:.1f}% | latest {latest_dt}")
+        status.success(f"CoinDCX database ready with {len(df):,} candles | expected {expected:,} | coverage {coverage:.1f}% | latest {latest_dt}")
     else:
-        status.warning(f"CoinDCX database may be stale. Latest candle {latest_dt} ({age_minutes:.0f} min old)")
+        status.warning(f"CoinDCX database may be stale. Candles {len(df):,} / expected {expected:,} | coverage {coverage:.1f}% | latest {latest_dt} ({age_minutes:.0f} min old)")
 
-    if len(df) < 5000:
+    if len(df) < expected * 0.5:
         st.warning(
-            f"CoinDCX returned only {len(df):,} candles. "
+            f"CoinDCX returned only {len(df):,} candles out of expected {expected:,}. "
             "This may mean CoinDCX public history is limited for this pair/timeframe."
         )
 
@@ -679,7 +679,7 @@ def decide(lr, sr, ls, ss, min_prob, min_samples, min_gap, min_score):
     return "NO TRADE", "No high-quality edge"
 
 st.title("How Much Possible Which Side")
-st.caption("created by Sachin Raosaheb Bhagat")
+st.caption("Created By: Sachin Raosaheb Bhagat")
 
 with st.sidebar:
     st.header("Automatic settings")
